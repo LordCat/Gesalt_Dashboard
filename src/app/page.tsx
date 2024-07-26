@@ -2,7 +2,7 @@
 import dynamic from 'next/dynamic';
 import ClientSideCanvas from '@/components/Canvas_Scene';
 
-const GlobeWithNoSSR = dynamic(() => import('../components/Globe'), { ssr: false });
+//const GlobeWithNoSSR = dynamic(() => import('../components/Globe'), { ssr: false });
 
 export default function Home() {
 

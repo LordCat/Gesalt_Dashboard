@@ -1,12 +1,16 @@
 'use client'
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useFrame, useThree, useLoader } from '@react-three/fiber';
+import {  ThreeEvent, useThree } from '@react-three/fiber';
 import { useTexture, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-import CountryBorders from './Country_Borders';
+
 import { FrustumCullingOptimizer } from '@/utils/frustum_culling_optimizer';
-import { ProcessedWorldData, preprocessWorldData } from '@/utils/world_data_pre_processing';
+import {  preprocessWorldData } from '@/utils/world_data_pre_processing';
+
+import CountryLabels from './Country_Labels';
+import CountryBorders from './Country_Borders';
+import { vector3ToLonLat } from '@/utils/PIPutils';
 
 const Globe: React.FC = () => {
   const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
@@ -29,17 +33,50 @@ const Globe: React.FC = () => {
   // Load TopoJSON data
   
 
-  const handleCountryHover = useCallback((countryName: string | null) => {
-    console.log("Hover handler called with:", countryName);
-    setHoveredCountry(countryName);
-  }, [processedData.countryNames]);
-
-  const handleCountryClick = useCallback((countryName: string) => {
-    console.log("Click handler called with:", countryName);
-    setSelectedCountry(prevSelected => 
-      prevSelected === countryName ? null : countryName
-    );
-  }, [processedData.countryNames]);
+  const handlePointerMove = useCallback((event: ThreeEvent<PointerEvent>) => {
+    if (globeSurfaceRef.current) {
+      const x = (event.clientX / window.innerWidth) * 2 - 1;
+      const y = -(event.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+  
+      const intersects = raycaster.intersectObject(globeSurfaceRef.current);
+      
+      if (intersects.length > 0) {
+        const { point } = intersects[0];
+        const [lon, lat] = vector3ToLonLat(point, radius);
+        
+        const tolerance = 0.5; // Adjust based on your needs
+        const nearbyArcs = arcIndex.search({
+          minX: lon - tolerance,
+          minY: lat - tolerance,
+          maxX: lon + tolerance,
+          maxY: lat + tolerance
+        });
+  
+        let closestDistance = Infinity;
+        let closestCountryId: string | null = null;
+  
+        nearbyArcs.forEach(item => {
+          const distance = pointToArcDistance([lon, lat], item.arc);
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestCountryId = item.countryId;
+          }
+        });
+  
+        // Add a threshold to determine if the point is close enough to be considered "inside" a country
+        const hoverThreshold = 0.1; // Adjust this value as needed
+        if (closestDistance <= hoverThreshold) {
+          const countryName = closestCountryId ? processedData.countryNames[closestCountryId] : null;
+          onCountryHover(countryName);
+        } else {
+          onCountryHover(null);
+        }
+      } else {
+        onCountryHover(null);
+      }
+    }
+  }, [globeSurfaceRef, raycaster, camera, radius, arcIndex, onCountryHover, processedData.countryNames]);
 
   useEffect(() => {
     frustumOptimizer.current.updateFrustum(camera);
@@ -107,6 +144,13 @@ const Globe: React.FC = () => {
         hoveredCountry={hoveredCountry}
         selectedCountry={selectedCountry}
         frustumOptimizer={frustumOptimizer.current}
+      />
+
+<CountryLabels
+        radius={1.002}
+        processedData={processedData}
+        hoveredCountry={hoveredCountry}
+        selectedCountry={selectedCountry}
       />
       
       <mesh>

@@ -30,6 +30,15 @@ export const processPolygon = (
     });
 };
   
+export function calculatePolygonArea(coordinates: number[][]): number {
+  let area = 0;
+  for (let i = 0; i < coordinates.length; i++) {
+    const j = (i + 1) % coordinates.length;
+    area += coordinates[i][0] * coordinates[j][1];
+    area -= coordinates[j][0] * coordinates[i][1];
+  }
+  return Math.abs(area) / 2;
+}
   
   
  export const latLonToVector3 = (lat: number, lon: number, radius: number): THREE.Vector3 => {

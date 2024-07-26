@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
 import { ProcessedWorldData } from '@/utils/world_data_pre_processing';
-import { latLonToVector3 } from '@/utils/PIPutils';
+import { latLonToVector3, calculatePolygonArea } from '@/utils/PIPutils';
 
 interface LabelData {
   position: THREE.Vector3;
@@ -31,30 +31,43 @@ const CountryLabels: React.FC<CountryLabelsProps> = ({ processedData, radius, ho
       const name = properties?.name || 'Unknown';
       let centerPosition: THREE.Vector3;
       let normal: THREE.Vector3;
-
+  
       if (geometry.type === 'Polygon' || geometry.type === 'MultiPolygon') {
-        const coordinates = geometry.type === 'Polygon' ? geometry.coordinates[0] : geometry.coordinates[0][0];
+        let largestPolygon: number[][] = [];
+        let maxArea = 0;
+  
+        const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates;
+        
+        polygons.forEach((polygon: number[][][]) => {
+          const coordinates = polygon[0]; // Outer ring of the polygon
+          const area = calculatePolygonArea(coordinates);
+          if (area > maxArea) {
+            maxArea = area;
+            largestPolygon = coordinates;
+          }
+        });
+  
         let totalLon = 0, totalLat = 0;
-        coordinates.forEach((coord: number[]) => {
+        largestPolygon.forEach((coord: number[]) => {
           totalLon += coord[0];
           totalLat += coord[1];
         });
-        const avgLon = totalLon / coordinates.length;
-        const avgLat = totalLat / coordinates.length;
+        const avgLon = totalLon / largestPolygon.length;
+        const avgLat = totalLat / largestPolygon.length;
         centerPosition = latLonToVector3(avgLat, avgLon, radius * 1.001); // Slightly above surface
         normal = centerPosition.clone().normalize();
       } else {
         centerPosition = new THREE.Vector3();
         normal = new THREE.Vector3(0, 1, 0);
       }
-
+  
       return { position: centerPosition, text: name, normal };
     });
   }, [processedData, radius]);
+  
 
   useFrame(() => {
     if (labelsRef.current) {
-      // Update frustum
       projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
       frustum.setFromProjectionMatrix(projScreenMatrix);
       
@@ -62,26 +75,28 @@ const CountryLabels: React.FC<CountryLabelsProps> = ({ processedData, radius, ho
         const label = child as THREE.Object3D;
         const labelData = label.userData as LabelData;
         
-        // Check if label is in frustum
         const isInFrustum = frustum.containsPoint(labelData.position);
-        if (!isInFrustum) {
-          return;
-        } else {
-          label.visible = isInFrustum;
-          // Update label size based on camera distance
+        if (isInFrustum) {
+          // Billboard effect while maintaining upright orientation
+          const worldPosition = new THREE.Vector3();
+          label.getWorldPosition(worldPosition);
+          const cameraPosition = camera.position.clone();
+          const up = worldPosition.clone().normalize();
+          const cameraDirection = cameraPosition.sub(worldPosition).normalize();
+          const right = up.clone().cross(cameraDirection).normalize();
+          const billboardRotation = new THREE.Matrix4().makeBasis(right, up, cameraDirection.negate());
+          label.quaternion.copy(camera.quaternion);
+  
+          // Visibility check
+          const dotProduct = up.dot(cameraDirection);
+          label.visible = dotProduct < 0;
+  
+          // Dynamic scaling
           const distance = camera.position.distanceTo(labelData.position);
           const scale = Math.max(0.5, Math.min(2, 10 / distance));
           label.scale.setScalar(scale);
-
-          // Orient label to be tangent to the globe surface
-          const up = labelData.position.clone().normalize();
-          const axis = new THREE.Vector3(0, 1, 1).cross(up).normalize();
-          const radians = Math.acos(new THREE.Vector3(0, 0, 1).dot(up));
-          label.quaternion.setFromAxisAngle(axis, radians);
-
-          // Rotate label to align with longitude lines
-          const longitude = Math.atan2(labelData.position.x, labelData.position.z);
-          label.rotateOnAxis(new THREE.Vector3(0, 1, 0), longitude);
+        } else {
+          label.visible = false;
         }
       });
     }
@@ -94,13 +109,18 @@ const CountryLabels: React.FC<CountryLabelsProps> = ({ processedData, radius, ho
           <Text
             text={data.text}
             fontSize={0.007 * radius}
-            color="white"
+            color={data.text === hoveredCountry ? "yellow" : data.text === selectedCountry ? "red" : "white"}
             anchorX="center"
             anchorY="middle"
-            renderOrder={1}
+            renderOrder={2}
           >
-            
-            <meshBasicMaterial attach="material" side={THREE.DoubleSide} depthTest={false} />
+            <meshBasicMaterial 
+              attach="material" 
+              side={THREE.DoubleSide}  
+              depthTest={false} 
+              transparent
+              opacity={data.text === hoveredCountry || data.text === selectedCountry ? 1 : 0.8}
+            />
           </Text>
         </group>
       ))}
