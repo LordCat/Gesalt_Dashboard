@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useThree } from '@react-three/fiber';
 import { useTexture, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -6,12 +6,16 @@ import RBush from 'rbush';
 import  pointInPolygon   from 'robust-point-in-polygon';
 
 import { FrustumCullingOptimizer } from '@/utils/frustum_culling_optimizer';
-import { preprocessWorldData } from '@/utils/world_data_pre_processing';
-import { vector3ToLonLat, getBoundingBox } from '@/utils/PIPutils';
+import { ProcessedWorldData, preprocessWorldData } from '@/utils/world_data_pre_processing';
+import { vector3ToLonLat, getBoundingBox, latLonToVector3 } from '@/utils/PIPutils';
 
 import CountryLabels from './Country_Labels';
 import CountryBorders from './Country_Borders';
 import { ArcIndex } from '@/Interfaces/Border_Interfaces';
+import { Position } from 'geojson';
+import { debounce } from '@/utils/debounce';
+
+type Point = [number, number];
 
 const Globe: React.FC = () => {
   const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
@@ -33,68 +37,100 @@ const Globe: React.FC = () => {
     '/assets/textures/8k_specular_map.jpg'
   ]);
 
+
+  const insertPolygon = (polygonCoords: Position[][], countryId: string) => {
+    polygonCoords.forEach(ring => {
+      const bbox = getBoundingBox(ring);
+      arcIndex.current.insert({
+        ...bbox,
+        polygon: ring,
+        arc: ring,
+        countryId: countryId,
+      });
+    });
+  };
+
   useEffect(() => {
-    // Initialize arcIndex with processed data
     processedData.features.forEach((feature) => {
-      if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
-        const polygons = feature.geometry.type === 'Polygon' ? [feature.geometry.coordinates] : feature.geometry.coordinates;
-        polygons.forEach((polygon) => {
-          const bbox = getBoundingBox(polygon[0]);
-          arcIndex.current.insert({
-            ...bbox,
-            polygon: polygon[0],
-            countryId: feature.id as string,
-          });
-        });
+      if (feature.geometry.type === 'Polygon') {
+        insertPolygon(feature.geometry.coordinates, feature.id as string);
+      } else if (feature.geometry.type === 'MultiPolygon') {
+        feature.geometry.coordinates.forEach(polygon => 
+          insertPolygon(polygon, feature.id as string)
+        );
       }
     });
   }, [processedData]);
 
+
   const handlePointerMove = useCallback((event: THREE.Event) => {
     if (globeSurfaceRef.current) {
-      const e = event as unknown as MouseEvent; // Type assertion
+      const e = event as unknown as MouseEvent;
+      
       const x = (e.clientX / window.innerWidth) * 2 - 1;
       const y = -(e.clientY / window.innerHeight) * 2 + 1;
       raycaster.current.setFromCamera(new THREE.Vector2(x, y), camera);
-
+  
       const intersects = raycaster.current.intersectObject(globeSurfaceRef.current);
       
       if (intersects.length > 0) {
         const { point } = intersects[0];
-        const [lon, lat] = vector3ToLonLat(point, radius);
-        
-        const tolerance = 0.5; // Adjust based on your needs
-        const potentialCountries = arcIndex.current.search({
-          minX: lon - tolerance,
-          minY: lat - tolerance,
-          maxX: lon + tolerance,
-          maxY: lat + tolerance
-        });
-
-        let hoveredCountryId: string | null = null;
-
-        for (const item of potentialCountries) {
-          if (pointInPolygon(item.polygon, [lon, lat]) < 1) {
-            hoveredCountryId = item.countryId;
-            break;
-          }
-        }
-
-        const countryName = hoveredCountryId ? processedData.countryNames[hoveredCountryId] : null;
-        setHoveredCountry(countryName);
+        const nearestCountry = findNearestCountry(point, processedData);
+        setHoveredCountry(nearestCountry);
       } else {
         setHoveredCountry(null);
       }
     }
-  }, [camera, processedData.countryNames, radius]);
+  }, [globeSurfaceRef, raycaster, camera, processedData]);
+  
+  const findNearestCountry = (point: THREE.Vector3, data: ProcessedWorldData): string | null => {
+    let nearestCountry = null;
+    let minDistance = Infinity;
+  
+    data.features.forEach((feature) => {
+      if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
+        const polygons = feature.geometry.type === 'Polygon' ? [feature.geometry.coordinates] : feature.geometry.coordinates;
+        
+        polygons.forEach((polygon: number[][][]) => {
+          const coordinates = polygon[0]; // Outer ring of the polygon
+          let centerPosition = new THREE.Vector3();
+  
+          // Calculate center of the polygon
+          coordinates.forEach((coord: number[]) => {
+            const [lon, lat] = coord;
+            const positionVector = latLonToVector3(lat, lon, radius);
+            centerPosition.add(positionVector);
+          });
+          centerPosition.divideScalar(coordinates.length);
+  
+          const distance = point.distanceTo(centerPosition);
+          if (distance < minDistance) {
+            minDistance = distance;
+            nearestCountry = feature.properties?.name || null;
+          }
+        });
+      }
+    });
+  
+    return nearestCountry;
+  };
+const debouncedHandlePointerMove = useMemo(
+  () => debounce(handlePointerMove, 10),  // 200ms debounce time, adjust as needed
+  [handlePointerMove]
+);
+
+useEffect(() => {
+  return () => {
+    // This is a cleanup function to cancel any pending debounced calls when the component unmounts
+    debouncedHandlePointerMove.cancel();
+  };
+}, [debouncedHandlePointerMove]);
 
   const handleCountryClick = useCallback((countryId: string) => {
     setSelectedCountry(prevSelected => prevSelected === countryId ? null : countryId);
   }, []);
 
-  useEffect(() => {
-    frustumOptimizer.current.updateFrustum(camera);
-  }, [camera]);
+  
 
   return (
     <>
@@ -146,13 +182,11 @@ const Globe: React.FC = () => {
       </mesh>
 
       <CountryBorders 
-        radius={radius * 1.001} 
+        radius={radius} 
         processedData={processedData}
-        onCountryHover={setHoveredCountry}
-        onCountryClick={handleCountryClick}
         hoveredCountry={hoveredCountry}
         selectedCountry={selectedCountry}
-        frustumOptimizer={frustumOptimizer.current}
+        
       />
 
       <CountryLabels
@@ -167,7 +201,7 @@ const Globe: React.FC = () => {
         <meshPhongMaterial
           map={cloudMap}
           transparent={true}
-          opacity={0.4}
+          opacity={0.2}
           depthWrite={true}
         />
       </mesh>
