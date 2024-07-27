@@ -8,6 +8,7 @@ export interface ArcIndex {
     maxY: number;
     arc: number[][];
     countryId: string;
+    polygon: number[][];
   }
 
 //Interface for the Country Borders render layer. 

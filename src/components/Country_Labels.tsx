@@ -107,13 +107,13 @@ const CountryLabels: React.FC<CountryLabelsProps> = ({ processedData, radius, ho
       {labelData.map((data, index) => (
         <group key={index} position={data.position} userData={data}>
           <Text
-            text={data.text}
             fontSize={0.007 * radius}
             color={data.text === hoveredCountry ? "yellow" : data.text === selectedCountry ? "red" : "white"}
             anchorX="center"
             anchorY="middle"
             renderOrder={2}
           >
+            {data.text}
             <meshBasicMaterial 
               attach="material" 
               side={THREE.DoubleSide}  

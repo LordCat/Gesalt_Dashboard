@@ -126,7 +126,9 @@ const frustum = useMemo(() => new THREE.Frustum(), []);
           }}
         />
       </lineSegments>
-      <mesh ref={globeSurfaceRef} onPointerMove={handlePointerMove}>
+      <mesh ref={globeSurfaceRef} onPointerMove={(event: ThreeEvent<PointerEvent>) => {
+
+      }}>
         <sphereGeometry args={[radius, 64, 64]} />
         <meshBasicMaterial transparent opacity={0.01} side={THREE.DoubleSide} />
       </mesh>

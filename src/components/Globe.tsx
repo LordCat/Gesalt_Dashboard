@@ -1,26 +1,29 @@
-'use client'
-
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {  ThreeEvent, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import { useTexture, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
+import RBush from 'rbush';
+import  pointInPolygon   from 'robust-point-in-polygon';
 
 import { FrustumCullingOptimizer } from '@/utils/frustum_culling_optimizer';
-import {  preprocessWorldData } from '@/utils/world_data_pre_processing';
+import { preprocessWorldData } from '@/utils/world_data_pre_processing';
+import { vector3ToLonLat, getBoundingBox } from '@/utils/PIPutils';
 
 import CountryLabels from './Country_Labels';
 import CountryBorders from './Country_Borders';
-import { vector3ToLonLat } from '@/utils/PIPutils';
+import { ArcIndex } from '@/Interfaces/Border_Interfaces';
 
 const Globe: React.FC = () => {
   const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const frustumOptimizer = useRef(new FrustumCullingOptimizer());
+  const globeSurfaceRef = useRef<THREE.Mesh>(null);
   const { camera } = useThree();
+  const raycaster = useRef(new THREE.Raycaster());
 
   const processedData = preprocessWorldData();
-  
-
+  const radius = 1; // Adjust this value based on your globe's size
+  const arcIndex = useRef(new RBush<ArcIndex>());
 
   const [dayMap, nightMap, cloudMap, normalMap, specularMap] = useTexture([
     '/assets/textures/8k_day_map.jpg',
@@ -30,68 +33,74 @@ const Globe: React.FC = () => {
     '/assets/textures/8k_specular_map.jpg'
   ]);
 
-  // Load TopoJSON data
-  
+  useEffect(() => {
+    // Initialize arcIndex with processed data
+    processedData.features.forEach((feature) => {
+      if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
+        const polygons = feature.geometry.type === 'Polygon' ? [feature.geometry.coordinates] : feature.geometry.coordinates;
+        polygons.forEach((polygon) => {
+          const bbox = getBoundingBox(polygon[0]);
+          arcIndex.current.insert({
+            ...bbox,
+            polygon: polygon[0],
+            countryId: feature.id as string,
+          });
+        });
+      }
+    });
+  }, [processedData]);
 
-  const handlePointerMove = useCallback((event: ThreeEvent<PointerEvent>) => {
+  const handlePointerMove = useCallback((event: THREE.Event) => {
     if (globeSurfaceRef.current) {
-      const x = (event.clientX / window.innerWidth) * 2 - 1;
-      const y = -(event.clientY / window.innerHeight) * 2 + 1;
-      raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
-  
-      const intersects = raycaster.intersectObject(globeSurfaceRef.current);
+      const e = event as unknown as MouseEvent; // Type assertion
+      const x = (e.clientX / window.innerWidth) * 2 - 1;
+      const y = -(e.clientY / window.innerHeight) * 2 + 1;
+      raycaster.current.setFromCamera(new THREE.Vector2(x, y), camera);
+
+      const intersects = raycaster.current.intersectObject(globeSurfaceRef.current);
       
       if (intersects.length > 0) {
         const { point } = intersects[0];
         const [lon, lat] = vector3ToLonLat(point, radius);
         
         const tolerance = 0.5; // Adjust based on your needs
-        const nearbyArcs = arcIndex.search({
+        const potentialCountries = arcIndex.current.search({
           minX: lon - tolerance,
           minY: lat - tolerance,
           maxX: lon + tolerance,
           maxY: lat + tolerance
         });
-  
-        let closestDistance = Infinity;
-        let closestCountryId: string | null = null;
-  
-        nearbyArcs.forEach(item => {
-          const distance = pointToArcDistance([lon, lat], item.arc);
-          if (distance < closestDistance) {
-            closestDistance = distance;
-            closestCountryId = item.countryId;
+
+        let hoveredCountryId: string | null = null;
+
+        for (const item of potentialCountries) {
+          if (pointInPolygon(item.polygon, [lon, lat]) < 1) {
+            hoveredCountryId = item.countryId;
+            break;
           }
-        });
-  
-        // Add a threshold to determine if the point is close enough to be considered "inside" a country
-        const hoverThreshold = 0.1; // Adjust this value as needed
-        if (closestDistance <= hoverThreshold) {
-          const countryName = closestCountryId ? processedData.countryNames[closestCountryId] : null;
-          onCountryHover(countryName);
-        } else {
-          onCountryHover(null);
         }
+
+        const countryName = hoveredCountryId ? processedData.countryNames[hoveredCountryId] : null;
+        setHoveredCountry(countryName);
       } else {
-        onCountryHover(null);
+        setHoveredCountry(null);
       }
     }
-  }, [globeSurfaceRef, raycaster, camera, radius, arcIndex, onCountryHover, processedData.countryNames]);
+  }, [camera, processedData.countryNames, radius]);
+
+  const handleCountryClick = useCallback((countryId: string) => {
+    setSelectedCountry(prevSelected => prevSelected === countryId ? null : countryId);
+  }, []);
 
   useEffect(() => {
     frustumOptimizer.current.updateFrustum(camera);
   }, [camera]);
 
-
-  if (!preprocessWorldData) {
-    return null; // or a loading indicator
-  }
-
   return (
     <>
       <OrbitControls enableZoom={true} enableRotate={true} enablePan={false} />
-      <mesh>
-        <sphereGeometry args={[1, 64, 64]} />
+      <mesh ref={globeSurfaceRef} onPointerMove={handlePointerMove}>
+        <sphereGeometry args={[radius, 64, 64]} />
         <shaderMaterial
           vertexShader={`
             varying vec2 vUv;
@@ -137,24 +146,24 @@ const Globe: React.FC = () => {
       </mesh>
 
       <CountryBorders 
-        radius={1.001} 
+        radius={radius * 1.001} 
         processedData={processedData}
-        onCountryHover={handleCountryHover}
+        onCountryHover={setHoveredCountry}
         onCountryClick={handleCountryClick}
         hoveredCountry={hoveredCountry}
         selectedCountry={selectedCountry}
         frustumOptimizer={frustumOptimizer.current}
       />
 
-<CountryLabels
-        radius={1.002}
+      <CountryLabels
+        radius={radius * 1.002}
         processedData={processedData}
         hoveredCountry={hoveredCountry}
         selectedCountry={selectedCountry}
       />
       
       <mesh>
-        <sphereGeometry args={[1.01, 64, 64]} />
+        <sphereGeometry args={[radius * 1.01, 64, 64]} />
         <meshPhongMaterial
           map={cloudMap}
           transparent={true}
