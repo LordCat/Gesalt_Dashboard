@@ -1,33 +1,38 @@
 import * as THREE from 'three';
 import RBush from 'rbush';
 import { ArcIndex } from '@/Interfaces/Border_Interfaces';
+import { Position } from 'geojson';
 
 
 // Utility functions
 // New helper function to process polygons
 export const processPolygon = (
-    polygon: number[][][],
-    countryId: string,
-    index: RBush<ArcIndex>,
-    allLines: THREE.Vector3[][],
-    radius: number
-  ) => {
-    polygon.forEach((ring: number[][]) => {
-      const line: THREE.Vector3[] = [];
-      ring.forEach((point: number[]) => {
-        const [lon, lat] = point;
-        line.push(latLonToVector3(lat, lon, radius));
-      });
-      allLines.push(line);
-  
-      // Index the arcs
-      const bbox = getBoundingBox(ring);
-      index.insert({
-        ...bbox,
-        arc: ring,
-        countryId,
-      });
+  polygon: number[][][],
+  countryId: string,
+  index: RBush<ArcIndex>,
+  allLines: THREE.Vector3[][],
+  radius: number,
+) => {
+  polygon.forEach((ring: number[][]) => {
+    const line: THREE.Vector3[] = [];
+    ring.forEach((point: number[]) => {
+      const [lon, lat] = point;
+      line.push(latLonToVector3(lat, lon, radius));
     });
+    allLines.push(line);
+
+    // Add feature indices for each point in the line
+    
+
+    // Index the arcs
+    const bbox = getBoundingBox(ring);
+    index.insert({
+      ...bbox,
+      arc: ring,
+      polygon: ring,
+      countryId,
+    });
+  });
 };
   
 export function calculatePolygonArea(coordinates: number[][]): number {
@@ -41,22 +46,23 @@ export function calculatePolygonArea(coordinates: number[][]): number {
 }
   
   
- export const latLonToVector3 = (lat: number, lon: number, radius: number): THREE.Vector3 => {
-    const phi = (90 - lat) * (Math.PI / 180);
-    const theta = (lon + 180) * (Math.PI / 180);
+export const latLonToVector3 = (lat: number, lon: number, radius: number): THREE.Vector3 => {
+  const phi = (90 - lat) * (Math.PI / 180);
+  const theta = (lon + 180) * (Math.PI / 180);
+
+  const x = -radius * Math.sin(phi) * Math.cos(theta);
+  const y = radius * Math.cos(phi);
+  const z = radius * Math.sin(phi) * Math.sin(theta);
+
+  return new THREE.Vector3(x, y, z);
+};
   
-    const x = -radius * Math.sin(phi) * Math.cos(theta);
-    const y = radius * Math.cos(phi);
-    const z = radius * Math.sin(phi) * Math.sin(theta);
-  
-    return new THREE.Vector3(x, y, z);
-  };
-  
-  export const vector3ToLonLat = (point: THREE.Vector3, radius: number): [number, number] => {
-    const lat = 90 - Math.acos(point.y / radius) * 180 / Math.PI;
-    const lon = (Math.atan2(point.z, point.x) * 180 / Math.PI + 180) % 360 - 180;
-    return [lon, lat];
-  };
+export const vector3ToLonLat = (point: THREE.Vector3): [number, number] => {
+  const normalizedPoint = point.clone().normalize();
+  const lat = 90 - Math.acos(normalizedPoint.y) * (180 / Math.PI);
+  const lon = Math.atan2(normalizedPoint.z, normalizedPoint.x) * (180 / Math.PI);
+  return [lon, lat];
+};
   
   export const topoToLonLat = ([x, y]: number[], transform: any): [number, number] => {
     const lon = transform.scale[0] * x + transform.translate[0];
