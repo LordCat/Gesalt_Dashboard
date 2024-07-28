@@ -3,11 +3,9 @@ import { useThree } from '@react-three/fiber';
 import { useTexture, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import RBush from 'rbush';
-import  pointInPolygon   from 'robust-point-in-polygon';
 
-import { FrustumCullingOptimizer } from '@/utils/frustum_culling_optimizer';
 import { ProcessedWorldData, preprocessWorldData } from '@/utils/world_data_pre_processing';
-import { vector3ToLonLat, getBoundingBox, latLonToVector3 } from '@/utils/PIPutils';
+import { getBoundingBox, latLonToVector3 } from '@/utils/PIPutils';
 
 import CountryLabels from './Country_Labels';
 import CountryBorders from './Country_Borders';
@@ -15,12 +13,11 @@ import { ArcIndex } from '@/Interfaces/Border_Interfaces';
 import { Position } from 'geojson';
 import { debounce } from '@/utils/debounce';
 
-type Point = [number, number];
 
 const Globe: React.FC = () => {
   const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
-  const frustumOptimizer = useRef(new FrustumCullingOptimizer());
+  
   const globeSurfaceRef = useRef<THREE.Mesh>(null);
   const { camera } = useThree();
   const raycaster = useRef(new THREE.Raycaster());
@@ -29,7 +26,7 @@ const Globe: React.FC = () => {
   const radius = 1; // Adjust this value based on your globe's size
   const arcIndex = useRef(new RBush<ArcIndex>());
 
-  const [dayMap, nightMap, cloudMap, normalMap, specularMap] = useTexture([
+  const [dayMap, nightMap, cloudMap, specularMap] = useTexture([
     '/assets/textures/8k_day_map.jpg',
     '/assets/textures/8k_night_map.jpg',
     '/assets/textures/8k_clouds.jpg',
@@ -76,12 +73,13 @@ const Globe: React.FC = () => {
       if (intersects.length > 0) {
         const { point } = intersects[0];
         const nearestCountry = findNearestCountry(point, processedData);
+        console.log("Hovered country:", nearestCountry); 
         setHoveredCountry(nearestCountry);
       } else {
         setHoveredCountry(null);
       }
     }
-  }, [globeSurfaceRef, raycaster, camera, processedData]);
+  }, [globeSurfaceRef, raycaster, camera, processedData, setHoveredCountry]);
   
   const findNearestCountry = (point: THREE.Vector3, data: ProcessedWorldData): string | null => {
     let nearestCountry = null;
@@ -182,7 +180,7 @@ useEffect(() => {
       </mesh>
 
       <CountryBorders 
-        radius={radius} 
+        radius={radius * 1.001} 
         processedData={processedData}
         hoveredCountry={hoveredCountry}
         selectedCountry={selectedCountry}

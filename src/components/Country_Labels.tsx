@@ -2,23 +2,17 @@ import React, { useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
-import { ProcessedWorldData } from '@/utils/world_data_pre_processing';
 import { latLonToVector3, calculatePolygonArea } from '@/utils/PIPutils';
+import { CountryLabelsProps, LabelData } from '@/Interfaces/Border_Interfaces';
 
-interface LabelData {
-  position: THREE.Vector3;
-  text: string;
-  normal: THREE.Vector3;
-}
 
-interface CountryLabelsProps {
-  processedData: ProcessedWorldData;
-  radius: number;
-  hoveredCountry: string | null;
-  selectedCountry: string | null;
-}
 
-const CountryLabels: React.FC<CountryLabelsProps> = ({ processedData, radius, hoveredCountry, selectedCountry}) => {
+const CountryLabels: React.FC<CountryLabelsProps> = ({ 
+  processedData,
+  radius, 
+  hoveredCountry, 
+  selectedCountry
+}) => {
   const labelsRef = useRef<THREE.Group>(null);
   const { camera } = useThree();
 

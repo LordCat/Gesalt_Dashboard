@@ -1,5 +1,5 @@
 import * as topojson from 'topojson-client';
-import worldDataJson from 'world-atlas/countries-50m.json';
+import worldDataJson from 'world-atlas/countries-110m.json';
 import { Feature, FeatureCollection, Geometry } from 'geojson';
 
 export interface ProcessedWorldData {

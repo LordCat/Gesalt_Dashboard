@@ -1,39 +1,29 @@
-import * as THREE from 'three';
-import RBush from 'rbush';
-import { ArcIndex } from '@/Interfaces/Border_Interfaces';
-import { Position } from 'geojson';
+  import * as THREE from 'three';
+ 
 
 
-// Utility functions
-// New helper function to process polygons
-export const processPolygon = (
-  polygon: number[][][],
-  countryId: string,
-  index: RBush<ArcIndex>,
-  allLines: THREE.Vector3[][],
-  radius: number,
-) => {
-  polygon.forEach((ring: number[][]) => {
-    const line: THREE.Vector3[] = [];
-    ring.forEach((point: number[]) => {
-      const [lon, lat] = point;
-      line.push(latLonToVector3(lat, lon, radius));
+
+  // Utility functions
+  // New helper function to process polygons
+  export function processPolygon(
+    coordinates: number[][][], 
+    featureIndex: number, 
+    positions: number[], 
+    featureIndices: number[], 
+    radius: number
+  ) {
+    coordinates[0].forEach((coord, i) => {
+      if (i < coordinates[0].length - 1) {
+        const [lon1, lat1] = coord;
+        const [lon2, lat2] = coordinates[0][i + 1];
+        const v1 = latLonToVector3(lat1, lon1, radius);
+        const v2 = latLonToVector3(lat2, lon2, radius);
+        
+        positions.push(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z);
+        featureIndices.push(featureIndex, featureIndex);
+      }
     });
-    allLines.push(line);
-
-    // Add feature indices for each point in the line
-    
-
-    // Index the arcs
-    const bbox = getBoundingBox(ring);
-    index.insert({
-      ...bbox,
-      arc: ring,
-      polygon: ring,
-      countryId,
-    });
-  });
-};
+  }
   
 export function calculatePolygonArea(coordinates: number[][]): number {
   let area = 0;
