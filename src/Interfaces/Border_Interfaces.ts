@@ -1,4 +1,4 @@
-import { FrustumCullingOptimizer } from "@/utils/frustum_culling_optimizer";
+import * as THREE from 'three';
 import { ProcessedWorldData } from "@/utils/world_data_pre_processing";
 import { Position } from "geojson";
 
@@ -19,6 +19,20 @@ export interface ArcIndex {
 export interface CountryBordersProps {
     radius: number;
     processedData: ProcessedWorldData;
+    hoveredCountry: string | null;
+    selectedCountry: string | null;
+  }
+
+
+ export interface LabelData {
+    position: THREE.Vector3;
+    text: string;
+    normal: THREE.Vector3;
+  }
+  
+  export interface CountryLabelsProps {
+    processedData: ProcessedWorldData;
+    radius: number;
     hoveredCountry: string | null;
     selectedCountry: string | null;
   }
