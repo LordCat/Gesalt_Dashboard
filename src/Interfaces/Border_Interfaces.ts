@@ -19,7 +19,7 @@ export interface CountryBordersProps {
     processedData: ProcessedWorldData;
     hoveredCountry: string | null;
     selectedCountry: string | null;
-    countryGeometries: Map<string, THREE.BufferGeometry>;
+    
 }
 
 // New interface for country geometry data
