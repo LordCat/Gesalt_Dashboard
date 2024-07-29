@@ -112,6 +112,8 @@ const Globe: React.FC = () => {
   
     return nearestCountry;
   };
+
+
 const debouncedHandlePointerMove = useMemo(
   () => debounce(handlePointerMove, 10),  // 200ms debounce time, adjust as needed
   [handlePointerMove]
