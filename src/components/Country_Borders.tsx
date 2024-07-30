@@ -79,26 +79,32 @@ const CountryBorders: React.FC<CountryBordersProps> = ({
       for (let i = 0; i < borderGeometry.attributes.featureIndex.count; i++) {
         const featureIndex = borderGeometry.attributes.featureIndex.getX(i);
         let color: THREE.Color;
-        if (featureIndex === hoveredIndex) {
+        let elevationFactor = 1.0;
+        
+        if (featureIndex === selectedIndex) {
+          color = new THREE.Color(0x00ff00); // Green for selected
+          elevationFactor = 1.02; // Elevate selected country
+        } else if (featureIndex === hoveredIndex) {
           color = new THREE.Color(0xff0000); // Red for hovered
-          // Elevate the hovered country
-          const vector = new THREE.Vector3(
-            positions[i * 3],
-            positions[i * 3 + 1],
-            positions[i * 3 + 2]
-          );
-          vector.normalize().multiplyScalar(radius * 1.01); // Increase altitude by 1%
-          positions[i * 3] = vector.x;
-          positions[i * 3 + 1] = vector.y;
-          positions[i * 3 + 2] = vector.z;
-        } else if (featureIndex === selectedIndex) {
-          color = new THREE.Color(0xffff00); // Yellow for selected
+          elevationFactor = 1.01; // Slightly elevate hovered country
         } else {
           color = new THREE.Color(0xffffff); // White for others
         }
+        
         colors[i * 3] = color.r;
         colors[i * 3 + 1] = color.g;
         colors[i * 3 + 2] = color.b;
+        
+        // Elevate the country
+        const vector = new THREE.Vector3(
+          positions[i * 3],
+          positions[i * 3 + 1],
+          positions[i * 3 + 2]
+        );
+        vector.normalize().multiplyScalar(radius * elevationFactor);
+        positions[i * 3] = vector.x;
+        positions[i * 3 + 1] = vector.y;
+        positions[i * 3 + 2] = vector.z;
       }
       
       linesRef.current.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));

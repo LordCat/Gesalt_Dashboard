@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useThree } from '@react-three/fiber';
+import { ThreeEvent, useThree } from '@react-three/fiber';
 import { useTexture, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import RBush from 'rbush';
@@ -19,7 +19,7 @@ const Globe: React.FC = () => {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   
   const globeSurfaceRef = useRef<THREE.Mesh>(null);
-  const { camera } = useThree();
+  const { camera, size } = useThree();
   const raycaster = useRef(new THREE.Raycaster());
 
   const processedData = preprocessWorldData();
@@ -126,16 +126,52 @@ useEffect(() => {
   };
 }, [debouncedHandlePointerMove]);
 
-  const handleCountryClick = useCallback((countryId: string) => {
-    setSelectedCountry(prevSelected => prevSelected === countryId ? null : countryId);
-  }, []);
+const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
+  console.log("Click event triggered");
+  if (globeSurfaceRef.current) {
+    // Calculate normalized device coordinates
+    const x = (event.clientX / size.width) * 2 - 1;
+    const y = -(event.clientY / size.height) * 2 + 1;
 
-  
+    // Set up the ray
+    const rayOrigin = new THREE.Vector3(x, y, -1).unproject(camera);
+    const rayDirection = new THREE.Vector3(x, y, 1).unproject(camera).sub(rayOrigin).normalize();
+    
+    raycaster.current.ray.origin.copy(rayOrigin);
+    raycaster.current.ray.direction.copy(rayDirection);
+
+    // Check for intersection with the globe
+    const intersects = raycaster.current.intersectObject(globeSurfaceRef.current);
+    
+    if (intersects.length > 0) {
+      const intersectionPoint = intersects[0].point;
+      console.log("Intersection point:", intersectionPoint);
+
+      const clickedCountry = findNearestCountry(intersectionPoint, processedData);
+      console.log("Clicked country:", clickedCountry);
+      
+      setSelectedCountry(prevSelected => {
+        const newSelected = prevSelected === clickedCountry ? null : clickedCountry;
+        console.log("New selected country:", newSelected);
+        return newSelected;
+      });
+    } else {
+      console.log("No intersection with globe");
+    }
+  } else {
+    console.log("globeSurfaceRef is null");
+  }
+}, [camera, size, processedData, setSelectedCountry]);
+
+useEffect(() => {
+  console.log("Current selected country:", selectedCountry); // Debug log
+}, [selectedCountry]);
+
 
   return (
     <>
       <OrbitControls enableZoom={true} enableRotate={true} enablePan={false} />
-      <mesh ref={globeSurfaceRef} onPointerMove={handlePointerMove}>
+      <mesh ref={globeSurfaceRef} onPointerMove={handlePointerMove} onClick={handleClick}>
         <sphereGeometry args={[radius, 64, 64]} />
         <shaderMaterial
           vertexShader={`
