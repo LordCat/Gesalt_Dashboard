@@ -171,7 +171,7 @@ useEffect(() => {
   return (
     <>
       <OrbitControls enableZoom={true} enableRotate={true} enablePan={false} />
-      <mesh ref={globeSurfaceRef} onPointerMove={handlePointerMove} onClick={handleClick}>
+      <mesh ref={globeSurfaceRef} onPointerMove={handlePointerMove} onDoubleClick={handleClick}>
         <sphereGeometry args={[radius, 64, 64]} />
         <shaderMaterial
           vertexShader={`
