@@ -4,12 +4,16 @@ import React from 'react';
 import { Canvas } from '@react-three/fiber';
 import Globe from './RenderLayers/Globe';
 
-const ClientSideCanvas: React.FC = () => {
+interface ClientSideCanvasProps {
+  onCountrySelect?: (country: string) => void;
+}
+
+const ClientSideCanvas: React.FC<ClientSideCanvasProps> = ({ onCountrySelect }) => {
   return (
     <Canvas>
       <ambientLight />
       <pointLight position={[10, 10, 10]} />
-      <Globe />
+      <Globe onCountrySelect={onCountrySelect}/>
     </Canvas>
   );
 };

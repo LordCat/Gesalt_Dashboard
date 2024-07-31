@@ -13,8 +13,11 @@ import { ArcIndex } from '@/Interfaces/Border_Interfaces';
 import { Position } from 'geojson';
 import { debounce } from '@/utils/debounce';
 
+interface GlobeProps {
+  onCountrySelect?: (country: string) => void;
+}
 
-const Globe: React.FC = () => {
+const Globe: React.FC<GlobeProps> = ({ onCountrySelect }) => {
   const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   
@@ -145,23 +148,24 @@ const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
     
     if (intersects.length > 0) {
       const intersectionPoint = intersects[0].point;
-      console.log("Intersection point:", intersectionPoint);
-
+      
       const clickedCountry = findNearestCountry(intersectionPoint, processedData);
       console.log("Clicked country:", clickedCountry);
-      
+      if (clickedCountry) { 
       setSelectedCountry(prevSelected => {
         const newSelected = prevSelected === clickedCountry ? null : clickedCountry;
         console.log("New selected country:", newSelected);
+        if (newSelected) {
+          onCountrySelect(newSelected);
+        }
         return newSelected;
       });
-    } else {
-      console.log("No intersection with globe");
     }
-  } else {
-    console.log("globeSurfaceRef is null");
-  }
-}, [camera, size, processedData, setSelectedCountry]);
+    } else {
+      console.log("globeSurfaceRef is null");
+    }
+}
+}, [camera, size, processedData, setSelectedCountry, onCountrySelect]);
 
 useEffect(() => {
   console.log("Current selected country:", selectedCountry); // Debug log
