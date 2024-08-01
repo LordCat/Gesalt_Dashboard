@@ -14,7 +14,7 @@ import { Position } from 'geojson';
 import { debounce } from '@/utils/debounce';
 
 interface GlobeProps {
-  onCountrySelect?: (country: string) => void;
+  onCountrySelect?: (country: string | null) => void;
 }
 
 const Globe: React.FC<GlobeProps> = ({ onCountrySelect }) => {
@@ -155,7 +155,7 @@ const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
       setSelectedCountry(prevSelected => {
         const newSelected = prevSelected === clickedCountry ? null : clickedCountry;
         console.log("New selected country:", newSelected);
-        if (newSelected) {
+        if (onCountrySelect) {
           onCountrySelect(newSelected);
         }
         return newSelected;

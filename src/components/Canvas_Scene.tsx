@@ -5,7 +5,7 @@ import { Canvas } from '@react-three/fiber';
 import Globe from './RenderLayers/Globe';
 
 interface ClientSideCanvasProps {
-  onCountrySelect?: (country: string) => void;
+  onCountrySelect?: (country: string | null) => void;
 }
 
 const ClientSideCanvas: React.FC<ClientSideCanvasProps> = ({ onCountrySelect }) => {
