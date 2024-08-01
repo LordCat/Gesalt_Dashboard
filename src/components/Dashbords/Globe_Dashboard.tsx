@@ -9,7 +9,7 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ country, isOpen, onClose }) => {
   return (
     <div 
-      className={`absolute top-0 left-0 h-full w-80 bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${
+      className={`absolute top-0 left-0 h-full w-80 transparent shadow-lg transform transition-transform duration-300 ease-in-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}
     >

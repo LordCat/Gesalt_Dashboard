@@ -8,9 +8,10 @@ const GlobeDashboardContainer = () => {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [dashboardOpen, setDashboardOpen] = useState(false);
 
-  const handleCountrySelect = (country: string) => {
+  const handleCountrySelect = (country: string | null) => {
     setSelectedCountry(country);
-    setDashboardOpen(true);
+    setDashboardOpen(!!country);
+    
   };
 
   return (
@@ -19,7 +20,10 @@ const GlobeDashboardContainer = () => {
       <Dashboard 
         country={selectedCountry} 
         isOpen={dashboardOpen}
-        onClose={() => setDashboardOpen(false)}
+        onClose={() => { 
+          setSelectedCountry(null);
+          setDashboardOpen(false);
+        }}
       />
     </div>
   );
