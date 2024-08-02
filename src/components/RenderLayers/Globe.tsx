@@ -26,7 +26,7 @@ const Globe: React.FC<GlobeProps> = ({ onCountrySelect }) => {
   const raycaster = useRef(new THREE.Raycaster());
 
   const processedData = preprocessWorldData();
-  const radius = 1.5; // Adjust this value based on your globe's size
+  const radius = 2; // Adjust this value based on your globe's size
   const arcIndex = useRef(new RBush<ArcIndex>());
 
   const [dayMap, nightMap, cloudMap, specularMap] = useTexture([
