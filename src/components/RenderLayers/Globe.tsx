@@ -75,9 +75,14 @@ const Globe: React.FC<GlobeProps> = ({ onCountrySelect }) => {
       
       if (intersects.length > 0) {
         const { point } = intersects[0];
-        const nearestCountry = findNearestCountry(point, processedData);
-        console.log("Hovered country:", nearestCountry); 
-        setHoveredCountry(nearestCountry);
+        const nearestCountryId = findNearestCountry(point, processedData);
+        if (nearestCountryId) {
+          const countryName = processedData.countryNames[nearestCountryId].split('|')[0].trim();
+          console.log("Hovered country:", countryName);
+          setHoveredCountry(countryName);
+        } else {
+          setHoveredCountry(null);
+        }
       } else {
         setHoveredCountry(null);
       }
@@ -107,7 +112,7 @@ const Globe: React.FC<GlobeProps> = ({ onCountrySelect }) => {
           const distance = point.distanceTo(centerPosition);
           if (distance < minDistance) {
             minDistance = distance;
-            nearestCountry = feature.properties?.name || null;
+            nearestCountry = feature.id || null;
           }
         });
       }
@@ -152,8 +157,9 @@ const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
       const clickedCountry = findNearestCountry(intersectionPoint, processedData);
       console.log("Clicked country:", clickedCountry);
       if (clickedCountry) { 
-      setSelectedCountry(prevSelected => {
-        const newSelected = prevSelected === clickedCountry ? null : clickedCountry;
+        const fullCountryName = processedData.countryNames[clickedCountry];
+        setSelectedCountry(prevSelected => {
+        const newSelected = prevSelected === fullCountryName ? null : fullCountryName;
         console.log("New selected country:", newSelected);
         if (onCountrySelect) {
           onCountrySelect(newSelected);

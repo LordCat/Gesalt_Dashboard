@@ -13,10 +13,4 @@ export enum WorldBankIndictors {
     GNIPerCapita = 'NY.GNP.PCAP.CD',
     Inflation = 'FP.CPI.TOTL.ZG',
     TradeBalance = 'NE.RSB.GNFS.ZS',
-    ForeignDirectInvestment = 'BX.KLT.DINV.WD.GD.ZS',
-    InternetUsers = 'IT.NET.USER.ZS',
-    ResearchAndDevelopment = 'GB.XPD.RSDV.GD.ZS',
-    HealthExpenditure = 'SH.XPD.CHEX.GD.ZS',
-    MilitaryExpenditure = 'MS.MIL.XPND.GD.ZS',
-    RenewableEnergy = 'EG.FEC.RNEW.ZS'
 }

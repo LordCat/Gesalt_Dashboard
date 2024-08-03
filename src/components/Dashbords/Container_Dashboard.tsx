@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import ClientSideCanvas from '../Canvas_Scene';
 import Dashboard from './Globe_Dashboard'; // We'll create this next
 
+
+
 const GlobeDashboardContainer = () => {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [dashboardOpen, setDashboardOpen] = useState(false);
@@ -24,6 +26,7 @@ const GlobeDashboardContainer = () => {
           setSelectedCountry(null);
           setDashboardOpen(false);
         }}
+        
       />
     </div>
   );

@@ -1,36 +1,41 @@
-'use client'
+import { useState, useEffect } from 'react';
+import { getTop20IndicatorsData } from '@/utils/world_bank_api.service';
 
-import React, { useState } from 'react';
-import ClientSideCanvas from '@/components/Canvas_Scene';
-import Dashboard from '@/components/Dashbords/Container_Dashboard';
-import { useWorldBankData } from '@
+export const useWorldBankData = (countryLabel: string | null) => {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-const GlobeDashboardContainer = () => {
-  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
-  const [dashboardOpen, setDashboardOpen] = useState(false);
-  const { data, loading, error } = useWorldBankData(selectedCountry);
+  useEffect(() => {
+    if (!countryLabel) {
+      setData(null);
+      setLoading(false);
+      setError(null);
+      return;
+    }
 
-  const handleCountrySelect = (country: string | null) => {
-    setSelectedCountry(country);
-    setDashboardOpen(!!country);
-  };
+    const parts = countryLabel.split('|');
+    if (parts.length !== 2) {
+      setError('Invalid country label format');
+      return;
+    }
 
-  return (
-    <div className="relative w-screen h-screen overflow-hidden">
-      <ClientSideCanvas onCountrySelect={handleCountrySelect} />
-      <Dashboard 
-        country={selectedCountry}
-        isOpen={dashboardOpen}
-        onClose={() => { 
-          setSelectedCountry(null);
-          setDashboardOpen(false);
-        }}
-        data={data}
-        loading={loading}
-        error={error}
-      />
-    </div>
-  );
+    const isoCode = parts[1].trim();
+    console.log('ISO code for selected country:', isoCode); // Debugging log
+    setLoading(true);
+    setError(null);
+
+    getTop20IndicatorsData(isoCode)
+      .then((result: any) => {
+        setData(result);
+        setLoading(false);
+      })
+      .catch((err: string) => {
+        setError('Failed to fetch data');
+        console.error('Failed to Fetch:', err);
+        setLoading(false);
+      });
+  }, [countryLabel]);
+
+  return { data, loading, error };
 };
-
-export default GlobeDashboardContainer;

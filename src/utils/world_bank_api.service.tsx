@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { WorldBankIndictors } from '@/enums/world_bank_indicators';
-import { format } from 'path';
 
 const WORLD_BANK_API_BASE_URL = 'https://api.worldbank.org/v2';
 const CAHCE_DURATION = 30 * 24 * 60 * 60 * 1000;
@@ -21,7 +20,7 @@ const fetchWithCache = async (url: string): Promise<any> => {
 
     try {
         const response = await axios.get(url, {
-            params: {format: 'json', per_page: 100 } 
+            params: {format: 'json', per_page: 1 } 
         });
 
         const data = response.data[1];
