@@ -22,7 +22,7 @@ const CountryLabels: React.FC<CountryLabelsProps> = ({
   const labelData: LabelData[] = useMemo(() => {
     return processedData.features.map((feature) => {
       const { properties, geometry } = feature;
-      const name = properties?.name || 'Unknown';
+      const name = processedData.countryNames[feature.id as string] || 'Unknown';
       let centerPosition: THREE.Vector3;
       let normal: THREE.Vector3;
   
@@ -102,9 +102,9 @@ const CountryLabels: React.FC<CountryLabelsProps> = ({
         <group key={index} position={data.position} userData={data}>
           <Text
             fontSize={0.007 * radius}
-            color={data.text === hoveredCountry ? "yellow" : data.text === selectedCountry ? "red" : "white"}
+            color={data.text === hoveredCountry ? "blue" : data.text === selectedCountry ? "red" : "white"}
             anchorX="center"
-            anchorY="middle"
+            anchorY="bottom-baseline"
             renderOrder={2}
           >
             {data.text}

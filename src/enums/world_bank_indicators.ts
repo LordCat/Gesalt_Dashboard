@@ -1,0 +1,16 @@
+export enum WorldBankIndictors {
+    Population = 'SP.POP.TOTL',
+    PopulationGrowth = 'SP.POP.GROW',
+    LifeExpectancy = 'SP.DYN.LE00.IN',
+    AdultLiteracyRate = 'SE.ADT.LITR.ZS',
+    CO2Emissions = 'EN.ATM.CO2E.PC',
+    ForestArea = 'AG.LND.FRST.ZS',
+    AccessToElectricity = 'EG.ELC.ACCS.ZS',
+    UnemploymentRate = 'SL.UEM.TOTL.ZS',
+    GDP = 'NY.GDP.MKTP.CD',
+    GDPPerCapita = 'NY.GDP.PCAP.CD',
+    GDPGrowth = 'NY.GDP.MKTP.KD.ZG',
+    GNIPerCapita = 'NY.GNP.PCAP.CD',
+    Inflation = 'FP.CPI.TOTL.ZG',
+    TradeBalance = 'NE.RSB.GNFS.ZS',
+}

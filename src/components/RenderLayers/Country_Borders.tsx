@@ -71,7 +71,7 @@ const CountryBorders: React.FC<CountryBordersProps> = ({
   useFrame(() => {
     if (materialRef.current && linesRef.current) {
       const hoveredIndex = hoveredCountry ? countryIndexMap.get(hoveredCountry) ?? -1 : -1;
-      const selectedIndex = selectedCountry ? countryIndexMap.get(selectedCountry) ?? -1 : -1;
+      const selectedIndex = selectedCountry ? countryIndexMap.get(selectedCountry.split('|')[0].trim()) ?? -1 : -1;
       
       const colors = new Float32Array(borderGeometry.attributes.position.count * 3);
       const positions = new Float32Array(borderGeometry.attributes.position.array);
