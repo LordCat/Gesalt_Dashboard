@@ -1,6 +1,6 @@
 import { useWorldBankData } from '@/hooks/useWorldBankAPI';
 import React from 'react';
-import { WorldBankIndictors } from '@/enums/world_bank_indicators';
+import { WorldBankIndicators, getIndicatorLabel, formatIndicatorValue } from '@/enums/world_bank_indicators';
 
 interface DashboardProps {
   country: string | null;
@@ -11,12 +11,12 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ country, isOpen, onClose }) => {
   const { data, loading, error } = useWorldBankData(country);
   
-  const renderIndicator = (indicator: WorldBankIndictors, value: any) => {
+  const renderIndicator = (indicator: WorldBankIndicators, value: any) => {
     if (!value || value.length === 0) return null;
     const latestData = value[0];
     return (
       <div key={indicator} className="mb-2">
-        <strong>{indicator}:</strong> {latestData.value} ({latestData.date})
+        <strong>{getIndicatorLabel(indicator)}:</strong> {formatIndicatorValue(indicator, latestData.value)} ({latestData.date})
       </div>
     );
   };
@@ -45,7 +45,7 @@ const Dashboard: React.FC<DashboardProps> = ({ country, isOpen, onClose }) => {
           {data && (
             <div>
               {Object.entries(data).map(([indicator, value]) => 
-                renderIndicator(indicator as WorldBankIndictors, value)
+                renderIndicator(indicator as WorldBankIndicators, value)
               )}
             </div>
           )}
