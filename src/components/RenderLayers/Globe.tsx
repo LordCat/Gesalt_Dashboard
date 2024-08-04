@@ -12,6 +12,7 @@ import CountryBorders from './Country_Borders';
 import { ArcIndex } from '@/Interfaces/Border_Interfaces';
 import { Position } from 'geojson';
 import { debounce } from '@/utils/debounce';
+import LoadingSphere from './Loading_Sphere';
 
 interface GlobeProps {
   onCountrySelect?: (country: string | null) => void;
@@ -20,6 +21,7 @@ interface GlobeProps {
 const Globe: React.FC<GlobeProps> = ({ onCountrySelect }) => {
   const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   const globeSurfaceRef = useRef<THREE.Mesh>(null);
   const { camera, size } = useThree();
@@ -29,13 +31,26 @@ const Globe: React.FC<GlobeProps> = ({ onCountrySelect }) => {
   const radius = 2; // Adjust this value based on your globe's size
   const arcIndex = useRef(new RBush<ArcIndex>());
 
-  const [dayMap, nightMap, cloudMap, specularMap] = useTexture([
+  const [dayMap, nightMap, cloudMap, normalMap, specularMap] = useTexture([
     '/assets/textures/8k_day_map.jpg',
     '/assets/textures/8k_night_map.jpg',
     '/assets/textures/8k_clouds.jpg',
     '/assets/textures/8k_normal_map.jpg',
     '/assets/textures/8k_specular_map.jpg'
   ]);
+  
+  useEffect(() => {
+    const textureLoader = new THREE.TextureLoader();
+    Promise.all([
+      textureLoader.loadAsync('/assets/textures/8k_day_map.jpg'),
+      textureLoader.loadAsync('/assets/textures/8k_night_map.jpg'),
+      textureLoader.loadAsync('/assets/textures/8k_clouds.jpg'),
+      textureLoader.loadAsync('/assets/textures/8k_normal_map.jpg'),
+      textureLoader.loadAsync('/assets/textures/8k_specular_map.jpg')
+    ]).then(() => {
+      setIsLoading(false);
+    });
+  }, []);
 
 
   const insertPolygon = (polygonCoords: Position[][], countryId: string) => {
@@ -180,6 +195,7 @@ useEffect(() => {
 
   return (
     <>
+    
       <OrbitControls enableZoom={true} enableRotate={true} enablePan={false} />
       <mesh ref={globeSurfaceRef} onPointerMove={handlePointerMove} onDoubleClick={handleClick}>
         <sphereGeometry args={[radius, 64, 64]} />
