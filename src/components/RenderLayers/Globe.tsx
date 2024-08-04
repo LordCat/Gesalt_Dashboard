@@ -30,11 +30,11 @@ const Globe: React.FC<GlobeProps> = ({ onCountrySelect }) => {
   const arcIndex = useRef(new RBush<ArcIndex>());
 
   const [dayMap, nightMap, cloudMap, specularMap] = useTexture([
-    '/assets/textures/8k_day_map.jpg',
-    '/assets/textures/8k_night_map.jpg',
-    '/assets/textures/8k_clouds.jpg',
-    '/assets/textures/8k_normal_map.jpg',
-    '/assets/textures/8k_specular_map.jpg'
+    '/public/assets/textures/8k_day_map.jpg',
+    '/public/assets/textures/8k_night_map.jpg',
+    '/public/assets/textures/8k_clouds.jpg',
+    '/public/assets/textures/8k_normal_map.jpg',
+    '/public/assets/textures/8k_specular_map.jpg'
   ]);
 
 
