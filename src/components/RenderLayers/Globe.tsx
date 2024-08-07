@@ -3,6 +3,7 @@ import { ThreeEvent, useThree } from '@react-three/fiber';
 import { useTexture, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import RBush from 'rbush';
+import { inflate } from 'pako';
 
 import { ProcessedWorldData, preprocessWorldData } from '@/utils/world_data_pre_processing';
 import { getBoundingBox, latLonToVector3 } from '@/utils/PIPutils';
@@ -32,26 +33,57 @@ const Globe: React.FC<GlobeProps> = ({ onCountrySelect }) => {
   const arcIndex = useRef(new RBush<ArcIndex>());
 
 
-  const [dayMap, nightMap, cloudMap, specularMap] = useTexture([
-    '/Gesalt_Dashboard/assets/textures/8k_day_map.jpg',
-    '/Gesalt_Dashboard/assets/textures/8k_night_map.jpg',
-    '/Gesalt_Dashboard/assets/textures/8k_clouds.jpg',
-    '/Gesalt_Dashboard/assets/textures/8k_normal_map.jpg',
-    '/Gesalt_Dashboard/assets/textures/8k_specular_map.jpg'
+  const [dayMap, nightMap, cloudMap, normalMap, specularMap] = useGzipTexture([
+    '/assets/textures/8k_day_map.jpg.gz',
+    '/assets/textures/8k_night_map.jpg.gz',
+    '/assets/textures/8k_clouds.jpg.gz',
+    '/assets/textures/8k_normal_map.jpg.gz',
+    '/assets/textures/8k_specular_map.jpg.gz'
   ]);
   
+  function useGzipTexture(urls: string[]) {
+    const [textures, setTextures] = useState<THREE.Texture[]>([]);
+    const { gl } = useThree();
+
+    useEffect(() => {
+      const loadTexture = async (url: string): Promise<THREE.Texture> => {
+        const response = await fetch(url);
+        const arrayBuffer = await response.arrayBuffer();
+        const inflated = inflate(new Uint8Array(arrayBuffer));
+        const blob = new Blob([inflated], { type: 'image/jpeg' });
+        const objectUrl = URL.createObjectURL(blob);
+        
+        return new Promise((resolve, reject) => {
+          const loader = new THREE.TextureLoader();
+          loader.load(
+            objectUrl,
+            (texture) => {
+              URL.revokeObjectURL(objectUrl);
+              texture.anisotropy = gl.capabilities.getMaxAnisotropy();
+              texture.minFilter = THREE.LinearMipmapLinearFilter;
+              texture.magFilter = THREE.LinearFilter;
+              texture.generateMipmaps = true;
+              resolve(texture);
+            },
+            undefined,
+            reject
+          );
+        });
+      };
+
+      Promise.all(urls.map(loadTexture))
+        .then(setTextures)
+        .catch(console.error);
+    }, [gl]);
+
+    return textures;
+  }
+  
   useEffect(() => {
-    const textureLoader = new THREE.TextureLoader();
-    Promise.all([
-      textureLoader.loadAsync('/Gesalt_Dashboard/assets/textures/8k_day_map.jpg'),
-      textureLoader.loadAsync('/Gesalt_Dashboard/assets/textures/8k_night_map.jpg'),
-      textureLoader.loadAsync('/Gesalt_Dashboard/assets/textures/8k_clouds.jpg'),
-      textureLoader.loadAsync('/Gesalt_Dashboard/assets/textures/8k_normal_map.jpg'),
-      textureLoader.loadAsync('/Gesalt_Dashboard/assets/textures/8k_specular_map.jpg')
-    ]).then(() => {
+    if (dayMap && nightMap && cloudMap && normalMap && specularMap) {
       setIsLoading(false);
-    });
-  }, []);
+    }
+  }, [dayMap, nightMap, cloudMap, normalMap, specularMap]);
 
 
   const insertPolygon = (polygonCoords: Position[][], countryId: string) => {
@@ -196,7 +228,6 @@ useEffect(() => {
 
   return (
     <>
-    
       <OrbitControls enableZoom={true} enableRotate={true} enablePan={false} />
       {isLoading ? (
       <LoadingSphere radius={radius} isLoading={isLoading} />
