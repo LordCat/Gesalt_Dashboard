@@ -13,7 +13,7 @@ const CountryBorders: React.FC<CountryBordersProps> = ({
   const linesRef = useRef<THREE.LineSegments>(null);
   const materialRef = useRef<THREE.LineBasicMaterial>(null);
   
-  const { borderGeometry, countryIndexMap, countryGeometries } = useMemo(() => {
+  const { borderGeometry, countryIndexMap } = useMemo(() => {
     const indexMap = new Map<string, number>();
     const positions: number[] = [];
     const featureIndices: number[] = [];

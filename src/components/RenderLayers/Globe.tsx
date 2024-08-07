@@ -197,6 +197,10 @@ useEffect(() => {
     <>
     
       <OrbitControls enableZoom={true} enableRotate={true} enablePan={false} />
+      {isLoading ? (
+      <LoadingSphere radius={radius} isLoading={isLoading} />
+    ) : (
+      <> 
       <mesh ref={globeSurfaceRef} onPointerMove={handlePointerMove} onDoubleClick={handleClick}>
         <sphereGeometry args={[radius, 64, 64]} />
         <shaderMaterial
@@ -268,7 +272,10 @@ useEffect(() => {
         />
       </mesh>
     </>
+        )}
+    </>
   );
+
 };
 
 export default Globe;

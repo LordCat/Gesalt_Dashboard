@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef} from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -6,69 +6,70 @@ const LoadingSphere: React.FC<{ radius?: number, isLoading: boolean }> = ({ radi
   const meshRef = useRef<THREE.Mesh>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
 
-  useEffect(() => {
-    if (materialRef.current) {
-      materialRef.current.uniforms.isLoading.value = isLoading;
-    }
-  }, [isLoading]);
-
   useFrame(({ clock }) => {
     if (materialRef.current) {
       materialRef.current.uniforms.time.value = clock.getElapsedTime();
     }
   });
 
-  const points = [];
-  for (let i = 0; i <= 180; i++) {
-    const phi = (i/180) * Math.PI;
-    const x = radius * Math.sin(phi);
-    const y = radius * Math.cos(phi);
-    points.push(new THREE.Vector3(x,y,0));
-  }
-
-  const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
 
   return (
     <mesh ref={meshRef}>
-    
-        <bufferGeometry attach="geometry" {...lineGeometry} />
-      
+      <circleGeometry args={[radius, 64]} />
       <shaderMaterial
         ref={materialRef}
         transparent
         uniforms={{
           time: { value: 0 },
-          color: {value: new THREE.Color(0x00ff00)},
+          radius: { value: radius },
+          isLoading: { value: isLoading }
         }}
         vertexShader={`
           varying vec2 vUv;
           void main() {
-            vUv = uv;
+            vUv = uv - 0.5;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
           }
         `}
         fragmentShader={`
           uniform float time;
+          uniform float radius;
           uniform bool isLoading;
           varying vec2 vUv;
-          
+
           void main() {
             if (!isLoading) {
               discard;
             }
-            
-            float t = mod(time, 4.0) / 2.0;
-            float alpha = smoothstep(t - 0.2, t, vUv.y) - smoothstep(t, t + 0.2, vUv.y);
-            if (t > 1.0) {
-              alpha = 1.0 - alpha;
+
+            float dist = length(vUv);
+            if (dist > 0.5) {
+              discard;
             }
+
+            float angle = atan(vUv.y, vUv.x);
+            float normalizedAngle = (angle + 3.14159) / (2.0 * 3.14159);
             
-            gl_FragColor = vec4(0.0, 1.0, 0.5, alpha * 0.5);
+            float animationProgress = mod(time * 0.5, 1.0);
+            float lineStart = animationProgress;
+            float lineEnd = mod(animationProgress + 0.1, 1.0);
+
+            float onLine = 0.0;
+            if (lineStart < lineEnd) {
+              onLine = float(normalizedAngle > lineStart && normalizedAngle < lineEnd);
+            } else {
+              onLine = float(normalizedAngle > lineStart || normalizedAngle < lineEnd);
+            }
+
+            float lineWidth = 0.01;
+            float edgeSmoothing = smoothstep(0.5 - lineWidth, 0.5, dist) - smoothstep(0.5, 0.5 + lineWidth, dist);
+
+            gl_FragColor = vec4(0.0, 1.0, 0.0, onLine * edgeSmoothing);
           }
         `}
       />
     </mesh>
-  )
+  );
 };
 
 export default LoadingSphere;

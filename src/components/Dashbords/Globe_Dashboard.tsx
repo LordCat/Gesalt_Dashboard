@@ -11,6 +11,7 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ country, isOpen, onClose }) => {
   const { data, loading, error } = useWorldBankData(country);
   
+  //This handles rendering the Indiciators on the dashboard
   const renderIndicator = (indicator: WorldBankIndicators, value: any) => {
     if (!value || value.length === 0) return null;
     const latestData = value[0];
@@ -20,7 +21,7 @@ const Dashboard: React.FC<DashboardProps> = ({ country, isOpen, onClose }) => {
       </div>
     );
   };
-
+  //This gets the country name from the countryLabel in the feature object, The ISO code get trimmed before display
   const getCountryName = (countryLabel: string | null) => {
     if (!countryLabel) return 'No country selected';
     return countryLabel.split('|')[0].trim();
