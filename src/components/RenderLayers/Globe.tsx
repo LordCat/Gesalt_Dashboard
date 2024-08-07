@@ -31,13 +31,12 @@ const Globe: React.FC<GlobeProps> = ({ onCountrySelect }) => {
   const radius = 2; // Adjust this value based on your globe's size
   const arcIndex = useRef(new RBush<ArcIndex>());
 
-
-  const [dayMap, nightMap, cloudMap, specularMap] = useTexture([
-    '/Gesalt_Dashboard/assets/textures/8k_day_map.jpg',
-    '/Gesalt_Dashboard/assets/textures/8k_night_map.jpg',
-    '/Gesalt_Dashboard/assets/textures/8k_clouds.jpg',
-    '/Gesalt_Dashboard/assets/textures/8k_normal_map.jpg',
-    '/Gesalt_Dashboard/assets/textures/8k_specular_map.jpg'
+  const [dayMap, nightMap, cloudMap, normalMap, specularMap] = useTexture([
+    '/assets/textures/8k_day_map.jpg',
+    '/assets/textures/8k_night_map.jpg',
+    '/assets/textures/8k_clouds.jpg',
+    '/assets/textures/8k_normal_map.jpg',
+    '/assets/textures/8k_specular_map.jpg'
   ]);
   
   useEffect(() => {
