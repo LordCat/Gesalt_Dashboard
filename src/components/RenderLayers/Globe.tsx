@@ -43,11 +43,11 @@ const Globe: React.FC<GlobeProps> = ({ onCountrySelect }) => {
   useEffect(() => {
     const textureLoader = new THREE.TextureLoader();
     Promise.all([
-      textureLoader.loadAsync('/assets/textures/8k_day_map.jpg'),
-      textureLoader.loadAsync('/assets/textures/8k_night_map.jpg'),
-      textureLoader.loadAsync('/assets/textures/8k_clouds.jpg'),
-      textureLoader.loadAsync('/assets/textures/8k_normal_map.jpg'),
-      textureLoader.loadAsync('/assets/textures/8k_specular_map.jpg')
+      textureLoader.loadAsync('/Gesalt_Dashboard/assets/textures/8k_day_map.jpg'),
+      textureLoader.loadAsync('/Gesalt_Dashboard/assets/textures/8k_night_map.jpg'),
+      textureLoader.loadAsync('/Gesalt_Dashboard/assets/textures/8k_clouds.jpg'),
+      textureLoader.loadAsync('/Gesalt_Dashboard/assets/textures/8k_normal_map.jpg'),
+      textureLoader.loadAsync('/Gesalt_Dashboard/assets/textures/8k_specular_map.jpg')
     ]).then(() => {
       setIsLoading(false);
     });
