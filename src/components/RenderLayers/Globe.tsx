@@ -34,11 +34,11 @@ const Globe: React.FC<GlobeProps> = ({ onCountrySelect }) => {
 
 
   const [dayMap, nightMap, cloudMap, normalMap, specularMap] = useGzipTexture([
-    '/assets/textures/8k_day_map.jpg.gz',
-    '/assets/textures/8k_night_map.jpg.gz',
-    '/assets/textures/8k_clouds.jpg.gz',
-    '/assets/textures/8k_normal_map.jpg.gz',
-    '/assets/textures/8k_specular_map.jpg.gz'
+    '/Gesalt_Dashboard/assets/textures/8k_day_map.jpg',
+    '/Gesalt_Dashboard/assets/textures/8k_night_map.jpg',
+    '/Gesalt_Dashboard/assets/textures/8k_clouds.jpg',
+    '/Gesalt_Dashboard/assets/textures/8k_normal_map.jpg',
+    '/Gesalt_Dashboard/assets/textures/8k_specular_map.jpg'
   ]);
   
   function useGzipTexture(urls: string[]) {
