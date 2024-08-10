@@ -22,7 +22,8 @@ const CountryLabels: React.FC<CountryLabelsProps> = ({
   const labelData: LabelData[] = useMemo(() => {
     return processedData.features.map((feature) => {
       const { properties, geometry } = feature;
-      const name = processedData.countryNames[feature.id as string] || 'Unknown';
+      const fullName = processedData.countryNames[feature.id as string] || 'Unknown';
+      const name = fullName.split('|')[0].trim();
       let centerPosition: THREE.Vector3;
       let normal: THREE.Vector3;
   
@@ -87,7 +88,7 @@ const CountryLabels: React.FC<CountryLabelsProps> = ({
   
           // Dynamic scaling
           const distance = camera.position.distanceTo(labelData.position);
-          const scale = Math.max(0.5, Math.min(2, 10 / distance));
+          const scale = Math.max(0.5, Math.min(1, 10 / distance));
           label.scale.setScalar(scale);
         } else {
           label.visible = false;
@@ -101,8 +102,8 @@ const CountryLabels: React.FC<CountryLabelsProps> = ({
       {labelData.map((data, index) => (
         <group key={index} position={data.position} userData={data}>
           <Text
-            fontSize={0.007 * radius}
-            color={data.text === hoveredCountry ? "blue" : data.text === selectedCountry ? "red" : "white"}
+            fontSize={0.01 * radius}
+            color={data.text === hoveredCountry ? "red" : data.text === selectedCountry ? "red" : "Black"}
             anchorX="center"
             anchorY="bottom-baseline"
             renderOrder={2}

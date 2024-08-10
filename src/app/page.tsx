@@ -1,5 +1,5 @@
 
-import GlobeDashboardContainer from '@/components/Dashbords/Container_Dashboard';
+import GlobeDashboardContainer from '@/components/Dashboard/Container_Dashboard';
 
 //const GlobeWithNoSSR = dynamic(() => import('../components/Globe'), { ssr: false });
 
