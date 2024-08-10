@@ -103,7 +103,7 @@ const CountryLabels: React.FC<CountryLabelsProps> = ({
         <group key={index} position={data.position} userData={data}>
           <Text
             fontSize={0.01 * radius}
-            color={data.text === hoveredCountry ? "red" : data.text === selectedCountry ? "red" : "Black"}
+            color={data.text === hoveredCountry ? "red" : data.text === selectedCountry ? "red" : "White"}
             anchorX="center"
             anchorY="bottom-baseline"
             renderOrder={2}
